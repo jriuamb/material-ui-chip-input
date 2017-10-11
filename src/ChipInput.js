@@ -150,13 +150,14 @@ class ChipInput extends React.Component {
     this.autoComplete.handleKeyDown = (event) => {
       const {newChipKeyCodes} = this.props
       if (newChipKeyCodes.indexOf(event.keyCode) >= 0 && event.target.value) {
-        event.preventDefault()
-        this.handleAddChip(event.target.value)
-        this.autoComplete.setState({ searchText: '' })
-        this.autoComplete.forceUpdate()
-      } else {
-        handleKeyDown(event)
+        if (this.handleAddChip(event.target.value)) {
+          event.preventDefault()
+          this.autoComplete.setState({ searchText: '' })
+          this.autoComplete.forceUpdate()
+          return
+        }
       }
+      handleKeyDown(event)
     }
 
     this.autoComplete.handleItemTouchTap = (event, child) => {
@@ -197,7 +198,7 @@ class ChipInput extends React.Component {
   focus () {
     if (this.autoComplete) {
       this.getInputNode().focus()
-      if (this.props.openOnFocus) {
+      if (this.props.openOnFocus && !this.props.disabled) {
         this.autoComplete.setState({
           open: true,
           anchorEl: this.getInputNode()
@@ -253,7 +254,7 @@ class ChipInput extends React.Component {
   }
 
   handleKeyDown = (event) => {
-    this.setState({keyPressed: false})
+    this.setState({ keyPressed: false })
     if (this.props.newChipKeyCodes.indexOf(event.keyCode) >= 0) {
       this.handleAddChip(event.target.value)
     } else if (event.keyCode === 8 || event.keyCode === 46) {
@@ -324,6 +325,9 @@ class ChipInput extends React.Component {
   }
 
   handleAddChip (chip) {
+    if (this.props.onBeforeRequestAdd && !this.props.onBeforeRequestAdd(chip)) {
+      return false
+    }
     this.autoComplete.setState({ searchText: '' })
     const chips = this.props.value || this.state.chips
 
@@ -363,6 +367,7 @@ class ChipInput extends React.Component {
         }
       }
     }
+    return true
   }
 
   handleDeleteChip (chip, i) {
@@ -449,6 +454,7 @@ class ChipInput extends React.Component {
       floatingLabelFocusStyle, // eslint-disable-line no-unused-vars
       floatingLabelStyle, // eslint-disable-line no-unused-vars
       floatingLabelText,
+      onBeforeRequestAdd, // eslint-disable-line no-unused-vars
       onRequestAdd, // eslint-disable-line no-unused-vars
       onRequestDelete, // eslint-disable-line no-unused-vars
       chipRenderer = defaultChipRenderer,
@@ -592,6 +598,7 @@ ChipInput.propTypes = {
   defaultValue: PropTypes.array,
   onChange: PropTypes.func,
   value: PropTypes.array,
+  onBeforeRequestAdd: PropTypes.func,
   onRequestAdd: PropTypes.func,
   onRequestDelete: PropTypes.func,
   dataSource: PropTypes.array,
